@@ -1,0 +1,5 @@
+app:
+  seed:
+    enabled: true
+    # Mật khẩu công khai chỉ để demo local; không dùng cho tài khoản thật.
+    password: ${DEMO_PASSWORD:Demo@12345}

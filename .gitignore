@@ -1,0 +1,13 @@
+# Không đưa dữ liệu cá nhân, dependency và kết quả build vào Git.
+# Quy tắc .env áp dụng ở mọi thư mục, gồm backend/.env; file mẫu được giữ lại.
+.env
+.env.*
+!.env.example
+!.env.local.example
+**/node_modules/
+**/.next/
+**/target/
+**/*.tsbuildinfo
+.tools/
+.idea/
+.vscode/
