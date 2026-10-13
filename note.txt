@@ -1,0 +1,8 @@
+cd d:\LMS\backend
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
+
+cd d:\LMS\frontend
+npm.cmd run dev
+
+cd d:\LMS
+docker compose up -d database

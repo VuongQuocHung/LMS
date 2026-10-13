@@ -1,147 +1,116 @@
-# LMS — bộ khung phát triển
+# FIT LMS — Hệ thống Quản lý Học tập Trực tuyến
 
-Base cho kế hoạch [LMS_PLAN.md](../LMS_PLAN.md), ưu tiên code dễ đọc và chú thích tiếng Việt. Đây là **nền để phát triển**, chưa phải toàn bộ LMS trong kế hoạch 21 ngày.
+Hệ thống Learning Management System (LMS) hoàn chỉnh được phát triển dựa trên phong cách giao diện và trải nghiệm người dùng của cổng học tập FIT LMS (https://lms.fit.hanu.vn/).
 
-## Đã có
+Dự án ưu tiên mã nguồn dễ đọc, chú thích tiếng Việt, phân tách tầng rõ ràng, kiểm soát phân quyền chặt chẽ và lưu trữ toàn vẹn dữ liệu.
 
-- Next.js App Router + TypeScript, giao diện responsive, trạng thái tải/lỗi/rỗng.
-- Giao diện cổng học tập theo ảnh tham khảo: đầu trang cam, menu ngang màu tối, lưới khóa học 5 cột trên desktop; có tìm kiếm, lọc trạng thái, sắp xếp và đổi dạng thẻ/danh sách.
-- Spring Boot + Java 17, controller/service/repository, DTO và validation.
-- Session HttpOnly, CSRF, đăng nhập/đăng xuất và hồ sơ ba vai trò.
-- Admin xem danh sách, khóa/mở tài khoản; session cũ bị chặn ở request tiếp theo.
-- Giảng viên xem khóa mình phụ trách, xem bài nháp và tạo khóa nháp.
-- Sinh viên chỉ thấy khóa đã ghi danh/công bố và bài học đã công bố.
-- PostgreSQL, Flyway V1, Hibernate validate, seed demo khi bật profile dev.
-- Integration test dùng login/session/CSRF thật qua MockMvc; H2 chỉ trong test.
+---
 
-## Chưa có
+## 1. Công nghệ & Kiến trúc
 
-CRUD đầy đủ cho tài khoản/bài học/ghi danh, publish/archive khóa qua API, soạn đề, lượt thi, lưu ACK/retry/receipt/revision, submit/scheduler, kết quả, baseline và thực nghiệm. Không có endpoint giả trả thành công cho các chức năng này. Quy tắc archive khi đang thi sẽ triển khai cùng module quiz theo plan.
+- **Frontend**: Next.js 16.4.0 (App Router, Turbopack), React 19.3.0, TypeScript 5, CSS thuần theo nhận diện cổng học tập (cam `#e66f23`, thanh điều hướng ngang tối `#30363e`, lưới khóa học 5 cột responsive).
+- **Backend**: Spring Boot 3.5.16, Java 17/21, Spring Data JPA, Hibernate 6.6.
+- **Xác thực & Bảo mật**: Spring Security với Cookie Session HttpOnly + CSRF Protection (`X-CSRF-TOKEN`), kiểm tra quyền truy cập bản ghi tại tầng Service.
+- **Cơ sở dữ liệu**: PostgreSQL 17 / H2 in-memory test mode, quản lý tiến trình di chuyển lược đồ tự động bằng Flyway (`V1__create_learning_tables.sql`, `V2__add_assignments_and_learning_features.sql`).
+- **Giao tiếp API**: RESTful API chuẩn hóa dưới prefix `/api/v1`, được Next.js reverse-proxy cùng origin trên cổng 3000.
 
-## Chạy local trên Windows
+---
 
-Cần Node.js >= 20.9, JDK 17+ và PostgreSQL. Docker Desktop chỉ cần nếu chọn chạy database bằng Docker Compose. Maven Wrapper tải Maven lần đầu nên cần mạng. Có thể dùng Maven 3.9+ đã cài thay wrapper.
+## 2. Các phân hệ chức năng đã hoàn thiện
 
-### 1. Database — terminal ở thư mục lms
+### 2.1. Quản trị Tài khoản & Phân quyền (`UserManagement.tsx`)
+- Quản lý danh sách tài khoản cho Quản trị viên (`ADMIN`).
+- Tìm kiếm theo từ khóa (họ tên, email, mã sinh viên), lọc theo vai trò (`ADMIN`, `TEACHER`, `STUDENT`) và trạng thái (`ACTIVE`, `DISABLED`).
+- Tạo tài khoản mới, chỉnh sửa thông tin, đặt lại mật khẩu và khóa/mở khóa tài khoản tức thì.
 
+### 2.2. Quản lý Khóa học & Đọc Bài học (`/courses/[courseId]`, `/courses/[courseId]/lessons/[lessonId]`)
+- Giảng viên tạo khóa học mới (mặc định `DRAFT`), sửa thông tin khóa, chuyển trạng thái (`PUBLISHED`, `DRAFT`, `ARCHIVED`) hoặc xóa khóa học.
+- Quản lý bài học: Thêm bài học mới, sửa nội dung, thứ tự hiển thị, bật/tắt công bố.
+- **Trang đọc bài học độc lập (`/courses/[courseId]/lessons/[lessonId]`)**: Thiết kế trải nghiệm đọc tập trung (Focused Reading), mục lục toàn khóa ở thanh bên (Sidebar TOC), điều hướng bài trước/sau, đánh dấu hoàn thành bài học đồng bộ tức thì với backend.
+- Sinh viên chỉ thấy khóa học đã công bố mà mình được ghi danh và các bài học đã công bố.
+- Theo dõi tiến độ: Sinh viên đánh dấu hoàn thành bài học, thanh tiến độ hiển thị trực quan tỷ lệ % hoàn thành khóa học.
+
+### 2.3. Quản lý Thành viên Lớp học (`Enrollments`)
+- Giảng viên ghi danh sinh viên bằng mã sinh viên hoặc email.
+- Tìm kiếm sinh viên trong lớp học, hủy ghi danh sinh viên an toàn kèm hộp thoại xác nhận.
+
+### 2.4. Module Bài tập & Chấm điểm Redesign (Moodle / Canvas LMS / Google Classroom Style)
+- **Kiến trúc trang riêng biệt (Dedicated URL)**: Toàn bộ trải nghiệm tạo bài, làm bài, xem kết quả và chấm điểm được tách biệt thành các trang độc lập, loại bỏ hoàn toàn modal/accordion chật chội.
+- **Trình tạo bài tập theo từng bước (`/courses/[courseId]/assignments/new`)**:
+  - Wizard 4 bước: 1. Thông tin cơ bản -> 2. Soạn nội dung / câu hỏi trắc nghiệm A/B/C/D trực quan -> 3. Thiết lập thời gian & Thang điểm -> 4. Xem trước & Công bố hoặc Lưu nháp.
+  - Tự động lưu toàn bộ ngân hàng câu hỏi vào cơ sở dữ liệu.
+- **Trang chi tiết & Làm bài độc lập (`/courses/[courseId]/assignments/[assignmentId]`)**:
+  - Bố cục 2 cột (cột nội dung làm bài + cột thông tin/hạn nộp).
+  - Trắc nghiệm: thẻ câu hỏi trực quan, bộ đếm số câu đã làm, xác nhận trước khi nộp, tự động chấm điểm tức thì trên server và hiển thị phân tích câu đúng/sai kèm đáp án chuẩn.
+  - Tự luận: khung soạn thảo bài làm có bộ đếm từ/ký tự, hiển thị hạn nộp, cảnh báo nộp trễ, và hiển thị phản hồi/điểm số khi giảng viên đã chấm.
+- **Bàn chấm điểm bài nộp SpeedGrader (`/courses/[courseId]/assignments/[assignmentId]/submissions`)**:
+  - Phân chia 2 cột: Cột trái đọc bài nộp của sinh viên (bài viết hoặc phân tích trắc nghiệm); cột phải nhập điểm, viết nhận xét phản hồi.
+  - Thanh chuyển đổi sinh viên trước/sau và bộ lọc trạng thái (Tất cả / Chờ chấm / Đã chấm) giúp chấm liên tục năng suất cao.
+- **Sổ điểm (Gradebook)**:
+  - Giảng viên theo dõi ma trận điểm của toàn bộ sinh viên trong lớp qua các bài tập.
+  - Sinh viên xem bảng tổng hợp kết quả học tập cá nhân.
+
+### 2.5. Tiện ích Học tập Bổ sung
+- **Thông báo khóa học (Announcements)**: Giảng viên đăng thông báo, sinh viên cập nhật tin tức và thông báo mới nhất.
+- **Diễn đàn Thảo luận (Discussions)**: Tạo chủ đề trao đổi, đặt câu hỏi và phản hồi bình luận theo luồng.
+- **Lịch học & Hạn nộp (Schedule)**: Màn hình tổng hợp các bài tập sắp đến hạn và đã qua hạn trên tất cả các khóa học của người dùng.
+
+---
+
+## 3. Hướng dẫn chạy dự án trên Windows
+
+### 3.1. Khởi động Cơ sở dữ liệu (PostgreSQL)
+Chạy bằng Docker Compose (hoặc dùng PostgreSQL cài trực tiếp trên máy):
 ```powershell
-Copy-Item .env.example .env
 docker compose up -d database
-docker compose ps
 ```
+*(Database `lms` mặc định tại cổng 5432, user `lms`, password `lms_local_password`)*
 
-PostgreSQL trong Docker mặc định ở localhost:5432, database/user là lms, mật khẩu local là lms_local_password. Nếu cổng đã dùng, đổi POSTGRES_PORT trong .env và đặt DB_URL tương ứng trong backend/.env. Nếu đã cài PostgreSQL trực tiếp và tạo database bằng pgAdmin, bỏ qua bước Docker và dùng thông tin kết nối của database đó.
-
-### 2. Backend — terminal ở lms/backend
-
-File `backend/.env` chứa thông tin kết nối riêng của máy bạn và được Git bỏ qua. Trên máy hiện tại file đã có thông tin chuyển từ application.yml. Khi lấy source trên máy mới, chỉ tạo file nếu chưa có:
-
-```powershell
-if (-not (Test-Path .env)) { Copy-Item .env.example .env }
-```
-
-Điền `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` trong file `.env`, rồi chạy backend:
-
+### 3.2. Khởi động Backend (Spring Boot)
+Tại thư mục `d:\LMS\backend`:
 ```powershell
 .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev"
 ```
+*(Backend khởi động tại `http://localhost:8080`, Flyway tự động chạy các migration V1 và V2)*
 
-API ở http://localhost:8080/api/v1/health. Lần đầu Flyway tạo bảng, sau đó seed nếu bảng users trống. Có thể thay .\mvnw.cmd bằng mvn.cmd.
-
-`application.yml` nạp `backend/.env` qua `spring.config.import` và tham chiếu ba giá trị kết nối; không chứa mật khẩu database thật. File dùng định dạng Properties: `KEY=value`, không đặt dấu nháy quanh giá trị; dấu gạch chéo ngược trong giá trị cần viết thành `\\`. Biến môi trường cùng tên được ưu tiên hơn nội dung file. Khi chạy từ IDE, đặt Working directory là thư mục `lms/backend`. File `.env` ở thư mục gốc `lms` chỉ dành cho Docker Compose, độc lập với `backend/.env`; `frontend/.env.local` chỉ cấu hình frontend. Khi chạy profile `dev`, mật khẩu tài khoản demo mặc định là `Demo@12345`; có thể đổi trong `application-dev.yml`. Đổi mật khẩu này không đổi tài khoản đã seed trước đó.
-
-**Xem thử khi chưa có Docker/PostgreSQL:** thay lệnh chạy backend bằng `.\mvnw.cmd spring-boot:test-run`. Lệnh này dùng TestLmsApplication và H2 trong RAM với tài khoản demo, không thay cấu hình PostgreSQL chính. Dữ liệu mất khi dừng; chỉ dùng xem thử giao diện/auth, không dùng đánh giá khóa đồng thời hoặc thực nghiệm của bài thi. Không chạy đồng thời hai backend trên cổng 8080.
-
-### 3. Frontend — terminal ở lms/frontend
-
+### 3.3. Khởi động Frontend (Next.js)
+Tại thư mục `d:\LMS\frontend`:
 ```powershell
-Copy-Item .env.local.example .env.local
-npm.cmd ci
 npm.cmd run dev
 ```
+*(Mở trình duyệt truy cập `http://localhost:3000`)*
 
-Mở **http://localhost:3000**. Dùng cùng hostname nhất quán khi đăng nhập. Trình duyệt gọi /api/v1 trên cổng 3000, Next.js chuyển tiếp tới backend; không gọi trực tiếp cổng 8080 trong code frontend.
+---
 
-### Tài khoản demo
+## 4. Tài khoản dùng thử (Profile dev)
 
-Chỉ được tạo khi dùng profile dev và database trống. Mật khẩu chung mặc định: **Demo@12345**.
+Mật khẩu chung cho tất cả tài khoản demo: **`Demo@12345`**
 
-| Email | Vai trò | Dữ liệu |
-| --- | --- | --- |
-| admin@lms.local | ADMIN | Quản lý tài khoản |
-| teacher@lms.local | TEACHER | Sở hữu khóa Lập trình mạng |
-| teacher2@lms.local | TEACHER | Chưa sở hữu khóa; dùng kiểm tra quyền |
-| student@lms.local | STUDENT | Đã ghi danh khóa mẫu |
-| student2@lms.local | STUDENT | Chưa ghi danh; dùng kiểm tra quyền |
+| Email | Vai trò | Chức năng chính |
+| :--- | :--- | :--- |
+| `admin@lms.local` | Quản trị viên | Quản lý người dùng, phân quyền, khóa tài khoản |
+| `teacher@lms.local` | Giảng viên | Sở hữu khóa "Lập trình mạng", giao bài tập trắc nghiệm & tự luận, chấm bài, đăng thông báo |
+| `teacher2@lms.local` | Giảng viên | Giảng viên khác, dùng kiểm thử phân quyền liên khóa học |
+| `student@lms.local` | Sinh viên | Đã ghi danh khóa mẫu, làm bài trắc nghiệm, nộp bài viết, đánh dấu tiến độ |
+| `student2@lms.local` | Sinh viên | Sinh viên chưa ghi danh, dùng kiểm thử bảo mật bài học & bài thi |
 
-Các tài khoản này chỉ dùng demo local. Khi dùng HTTPS, đặt COOKIE_SECURE=true. Profile mặc định không seed tài khoản; không dùng profile dev và mật khẩu demo cho môi trường thật.
+*(Giao diện đăng nhập đã tích hợp sẵn các nút bấm điền nhanh các tài khoản demo này)*
 
-### Dừng / reset
+---
 
-```powershell
-# Dừng database nhưng giữ dữ liệu trong volume.
-docker compose down
-```
+## 5. Kiểm thử & Đảm bảo chất lượng
 
-Muốn **xóa toàn bộ dữ liệu demo** và seed lại: dừng backend, chạy docker compose down -v rồi docker compose up -d database và khởi động lại backend với profile dev. Lệnh -v xóa volume, chỉ dùng với dữ liệu có thể bỏ.
+- **Backend Integration Tests**:
+  ```powershell
+  cd d:\LMS\backend
+  .\mvnw.cmd test
+  ```
+  *(15 integration tests sử dụng MockMvc, Spring Security và H2 in-memory DB: 0 failures, 0 errors)*
 
-## Kiểm tra
-
-Trong backend:
-
-```powershell
-.\mvnw.cmd test
-.\mvnw.cmd package
-```
-
-Test không cần Docker: H2 chế độ PostgreSQL chạy migration V1, seed và kiểm tra auth/quyền. H2 không thay thế kiểm thử PostgreSQL thật, đặc biệt khóa/transaction của module thi sau này.
-
-Trong frontend:
-
-```powershell
-npm.cmd run typecheck
-npm.cmd run lint
-npm.cmd run build
-npm.cmd start
-```
-
-Kết quả kiểm tra và giới hạn môi trường được ghi trong [docs/verification.md](docs/verification.md).
-
-## Đọc code theo thứ tự nào?
-
-1. [docs/code-guide.md](docs/code-guide.md): đường đi của request và ý nghĩa từng tầng.
-2. [backend/.../SecurityConfig.java](backend/src/main/java/vn/edu/lms/auth/SecurityConfig.java): session, CSRF, login/logout.
-3. [frontend/src/lib/api.ts](frontend/src/lib/api.ts): fetch, timeout, CSRF và lỗi.
-4. [CourseController.java](backend/src/main/java/vn/edu/lms/course/CourseController.java) → [CourseService.java](backend/src/main/java/vn/edu/lms/course/CourseService.java) → [CourseRepository.java](backend/src/main/java/vn/edu/lms/course/CourseRepository.java).
-5. [CourseWorkspace.tsx](frontend/src/components/CourseWorkspace.tsx): gọi API và hiển thị dữ liệu.
-6. [BaseIntegrationTest.java](backend/src/test/java/vn/edu/lms/BaseIntegrationTest.java): các ví dụ kiểm tra quyền với session thật.
-
-## Cấu trúc
-
-```text
-lms/
-  backend/
-    src/main/java/vn/edu/lms/
-      auth/          # Session, CSRF, người dùng hiện tại, kiểm tra tài khoản khóa
-      user/          # Tài khoản, vai trò và API quản trị tối thiểu
-      course/        # Khóa học, bài học, kiểm tra quyền sở hữu/ghi danh
-      enrollment/    # Liên kết sinh viên và khóa
-      common/        # Lỗi API, health, seed demo
-    src/main/resources/db/migration/
-    src/test/        # Test riêng, không chạy vào database thật
-  frontend/src/
-    app/            # Trang, layout và CSS
-    components/     # Form và các vùng giao diện
-    lib/            # API client, kiểu dữ liệu chung
-  docs/
-  compose.yaml      # PostgreSQL local
-```
-
-Không dùng Lombok, generic CRUD base class, Redux hoặc abstraction nhiều tầng ở giai đoạn này. Chỉ tách phần dùng chung khi có nhu cầu thực tế.
-
-## Tài liệu kỹ thuật
-
-- [Next.js installation](https://nextjs.org/docs/app/getting-started/installation)
-- [Spring Boot 3.5](https://docs.spring.io/spring-boot/3.5/reference/index.html)
-- [Spring Security session](https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html)
-- [API hiện có](docs/api-contract.md), [ERD](docs/erd.md), [demo](docs/demo.md).
+- **Frontend Typecheck, Lint & Production Build**:
+  ```powershell
+  cd d:\LMS\frontend
+  npm.cmd run typecheck   # TypeScript check: 0 errors
+  npm.cmd run lint        # ESLint: 0 errors
+  npm.cmd run build       # Next.js Turbopack build thành công
+  ```
