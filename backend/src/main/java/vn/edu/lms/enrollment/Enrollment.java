@@ -21,4 +21,8 @@ public class Enrollment {
         this.courseId = courseId;
         this.studentId = studentId;
     }
+
+    public Long getId() { return id; }
+    public Long getCourseId() { return courseId; }
+    public Long getStudentId() { return studentId; }
 }

@@ -16,4 +16,6 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             order by c.id desc
             """)
     List<Course> findVisibleToStudent(@Param("studentId") Long studentId);
+    /** Tìm khóa theo tiêu đề phục vụ kiểm thử và tra cứu. */
+    java.util.Optional<Course> findFirstByTitle(String title);
 }

@@ -44,4 +44,10 @@ public class Course {
     public String getDescription() { return description; }
     /** Lấy trạng thái để quyết định sinh viên có thể xem hay không. */
     public CourseStatus getStatus() { return status; }
+    /** Cập nhật tiêu đề khóa học. */
+    public void setTitle(String title) { this.title = title; }
+    /** Cập nhật mô tả khóa học. */
+    public void setDescription(String description) { this.description = description; }
+    /** Cập nhật trạng thái khóa học (DRAFT, PUBLISHED, ARCHIVED). */
+    public void setStatus(CourseStatus status) { this.status = status; }
 }

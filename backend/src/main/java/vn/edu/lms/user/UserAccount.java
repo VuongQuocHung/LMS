@@ -58,4 +58,12 @@ public class UserAccount {
     public boolean isEnabled() { return enabled; }
     /** Admin dùng hàm này để khóa hoặc mở khóa tài khoản. */
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
+    /** Cập nhật họ tên người dùng. */
+    public void setFullName(String fullName) { this.fullName = fullName; }
+    /** Cập nhật mã sinh viên. */
+    public void setStudentCode(String studentCode) { this.studentCode = studentCode; }
+    /** Cập nhật vai trò tài khoản. */
+    public void setRole(Role role) { this.role = role; }
+    /** Cập nhật mật khẩu đã băm. */
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 }
