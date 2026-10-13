@@ -38,6 +38,18 @@ input, textarea {
   width: 100%; border: 1px solid #ccc; border-radius: 3px;
   padding: 10px 12px; color: var(--ink); background: white;
 }
+input[type="radio"], input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: initial !important;
+  cursor: pointer;
+  flex-shrink: 0;
+  accent-color: var(--orange);
+}
 textarea { resize: vertical; }
 small { display: block; color: var(--muted); font-size: 12px; }
 .primary, .secondary, .logout-button {
@@ -232,3 +244,329 @@ td { font-size: 13px; }
   .panel { padding: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ===== HỆ THỐNG GIAO DIỆN REDESIGN CHO BÀI TẬP VÀ BÀI HỌC ===== */
+
+/* Bố cục 2 cột tiêu chuẩn cho màn hình chi tiết, làm bài và cấu hình */
+.layout-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+.col-main {
+  min-width: 0;
+}
+.col-sidebar {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (max-width: 960px) {
+  .layout-two-col {
+    grid-template-columns: 1fr;
+  }
+  .col-sidebar {
+    position: static;
+  }
+}
+
+/* Thanh điều hướng theo từng bước (Wizard Stepper) */
+.wizard-stepper {
+  display: flex;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 24px;
+  overflow-x: auto;
+  background: white;
+  border-radius: 4px 4px 0 0;
+}
+.wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border: 0;
+  background: transparent;
+  border-bottom: 3px solid transparent;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+.wizard-step:hover {
+  color: var(--ink);
+  background: #fafafa;
+}
+.wizard-step.active {
+  color: var(--orange-dark);
+  border-bottom-color: var(--orange);
+  font-weight: 700;
+  background: #fffdf9;
+}
+.wizard-step.completed {
+  color: var(--green-dark);
+}
+.step-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  background: #e2e8f0;
+  color: #475569;
+  font-weight: bold;
+}
+.wizard-step.active .step-number {
+  background: var(--orange);
+  color: white;
+}
+.wizard-step.completed .step-number {
+  background: var(--green);
+  color: white;
+}
+
+/* Thẻ câu hỏi trắc nghiệm & lựa chọn đáp án */
+.quiz-question-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px 24px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.quiz-options-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.quiz-option-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  background: #fafafa;
+  transition: all 0.15s ease;
+  font-size: 14px;
+}
+.quiz-option-label:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.quiz-option-label.selected {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  font-weight: 500;
+  box-shadow: inset 0 0 0 1px #3b82f6;
+}
+.quiz-option-label.correct {
+  background: #f0fdf4;
+  border-color: #22c55e;
+  color: #166534;
+  font-weight: 600;
+}
+.quiz-option-label.incorrect {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+/* Màn hình chấm điểm phân chia 2 cột (SpeedGrader style) */
+.grading-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 24px;
+  align-items: start;
+}
+.grading-reader {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 28px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+.grading-console {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 22px;
+  position: sticky;
+  top: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+.student-switcher {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: #fafafa;
+  padding: 10px 16px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+@media (max-width: 960px) {
+  .grading-workbench {
+    grid-template-columns: 1fr;
+  }
+  .grading-console {
+    position: static;
+  }
+}
+
+/* Giao diện đọc bài học tập trung (Focused Lesson Reading) */
+.lesson-reader-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 28px;
+  align-items: start;
+}
+.lesson-article {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 32px 36px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+.lesson-body {
+  font-size: 15px;
+  line-height: 1.75;
+  color: #2d3748;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 20px;
+}
+.lesson-toc {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 18px;
+  position: sticky;
+  top: 20px;
+}
+.toc-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.toc-item:hover {
+  background: #f1f5f9;
+  text-decoration: none;
+}
+.toc-item.active {
+  background: #eff6ff;
+  font-weight: 600;
+  color: #1d4ed8;
+  border-left: 3px solid #3b82f6;
+}
+.lesson-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .lesson-reader-container {
+    grid-template-columns: 1fr;
+  }
+  .lesson-toc {
+    position: static;
+  }
+  .lesson-article {
+    padding: 20px;
+  }
+}
+
+/* Quiz Option Builder styles */
+.option-builder-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+.option-builder-row.is-correct {
+  border: 2px solid #22c55e;
+  background-color: #f0fdf4;
+}
+.option-letter-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 13px;
+  background: #e2e8f0;
+  color: #334155;
+  flex-shrink: 0;
+}
+.option-builder-row.is-correct .option-letter-badge {
+  background: #22c55e;
+  color: white;
+}
+.option-correct-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+.option-builder-row.is-correct .option-correct-toggle {
+  border-color: #22c55e;
+  background: #dcfce7;
+  color: #166534;
+  font-weight: 600;
+}
+.option-input-field {
+  flex: 1;
+  min-width: 0;
+}
+.option-delete-btn {
+  background: transparent;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0;
+  padding: 0;
+}
+.option-delete-btn:hover {
+  background: #fee2e2;
+}
+
+

@@ -10,8 +10,14 @@ export default function LoginForm({ onLogin }: { onLogin: (user: User) => void }
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  // Chặn bấm liên tiếp khi request đăng nhập chưa hoàn tất.
   const [busy, setBusy] = useState(false);
+
+  /** Điền nhanh tài khoản demo để kiểm thử thuận tiện. */
+  function fillDemo(demoEmail: string) {
+    setEmail(demoEmail);
+    setPassword("Demo@12345");
+    setError("");
+  }
 
   /** Kiểm tra thông tin bằng backend rồi bàn giao user cho trang chính. */
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -20,8 +26,8 @@ export default function LoginForm({ onLogin }: { onLogin: (user: User) => void }
     setError("");
     try {
       onLogin(await login(email, password));
-    } catch (error) {
-      setError(errorMessage(error));
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
       setPassword("");
       setBusy(false);
@@ -30,7 +36,6 @@ export default function LoginForm({ onLogin }: { onLogin: (user: User) => void }
 
   return (
     <div className="portal-shell login-portal">
-      {/* Nhận diện dùng chung giúp trang login và trang khóa học thống nhất. */}
       <header className="portal-header"><PortalBrand /></header>
       <div className="login-nav-label">Cổng học tập trực tuyến</div>
       <main className="login-panel">
@@ -47,6 +52,36 @@ export default function LoginForm({ onLogin }: { onLogin: (user: User) => void }
             {error && <p className="error" role="alert">{error}</p>}
             <button className="primary full" disabled={busy}>{busy ? "Đang đăng nhập…" : "Vào không gian học tập →"}</button>
           </form>
+
+          {/* Hỗ trợ điền nhanh tài khoản demo cho kiểm thử */}
+          <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "1px dashed #ddd" }}>
+            <p style={{ fontSize: "11px", color: "var(--muted)", margin: "0 0 8px", fontWeight: 600 }}>
+              Tài khoản dùng thử (Mật khẩu: Demo@12345):
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              <button type="button" className="secondary" style={{ fontSize: "11px", padding: "3px 7px" }}
+                onClick={() => fillDemo("admin@lms.local")}>
+                Admin
+              </button>
+              <button type="button" className="secondary" style={{ fontSize: "11px", padding: "3px 7px" }}
+                onClick={() => fillDemo("teacher@lms.local")}>
+                Giảng viên 1
+              </button>
+              <button type="button" className="secondary" style={{ fontSize: "11px", padding: "3px 7px" }}
+                onClick={() => fillDemo("teacher2@lms.local")}>
+                Giảng viên 2
+              </button>
+              <button type="button" className="secondary" style={{ fontSize: "11px", padding: "3px 7px" }}
+                onClick={() => fillDemo("student@lms.local")}>
+                Sinh viên (đã ghi danh)
+              </button>
+              <button type="button" className="secondary" style={{ fontSize: "11px", padding: "3px 7px" }}
+                onClick={() => fillDemo("student2@lms.local")}>
+                Sinh viên 2
+              </button>
+            </div>
+          </div>
+
           <p className="login-help">Chưa có tài khoản? Liên hệ quản trị viên lớp học.</p>
         </div>
       </main>

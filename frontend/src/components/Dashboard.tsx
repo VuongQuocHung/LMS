@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { errorMessage, isSessionError, logout } from "@/lib/api";
-import type { Role, User } from "@/lib/types";
+import type { Course, Role, User } from "@/lib/types";
 import CourseWorkspace from "./CourseWorkspace";
 import UserManagement from "./UserManagement";
 import PortalBrand from "./PortalBrand";
+import ScheduleModal from "./ScheduleModal";
 
 // Đổi mã vai trò của API thành nhãn tiếng Việt cho người sử dụng.
 const ROLE_LABELS: Record<Role, string> = {
@@ -18,6 +20,8 @@ export default function Dashboard({ user, onLogout }: { user: User; onLogout: ()
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [showProfile, setShowProfile] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const isAdmin = user.role === "ADMIN";
   const pageTitle = isAdmin ? "Quản lý tài khoản" : "Các khóa học của tôi";
 
@@ -37,6 +41,20 @@ export default function Dashboard({ user, onLogout }: { user: User; onLogout: ()
       else setError(errorMessage(error));
     } finally {
       setBusy(false);
+    }
+  }
+
+  const router = useRouter();
+
+  function handleBackToCourseList() {
+    setSelectedCourse(null);
+  }
+
+  function handleSelectCourse(course: Course | null) {
+    if (course) {
+      router.push(`/courses/${course.id}`);
+    } else {
+      setSelectedCourse(null);
     }
   }
 
@@ -60,12 +78,19 @@ export default function Dashboard({ user, onLogout }: { user: User; onLogout: ()
 
       {/* Menu chỉ chứa các khu vực đã có; mục tài khoản mở hồ sơ lấy từ API /auth/me. */}
       <nav className="main-nav" aria-label="Điều hướng chính">
-        <a className="nav-brand" href="#main-content" aria-label="Trang chính LMS">LMS</a>
-        <a className="nav-item nav-active" href="#main-content" aria-current="page">{pageTitle}</a>
+        <a className="nav-brand" href="#main-content" onClick={handleBackToCourseList} aria-label="Trang chính LMS">LMS</a>
+        <a className="nav-item nav-active" href="#main-content" onClick={handleBackToCourseList} aria-current="page">{pageTitle}</a>
+        {!isAdmin && (
+          <button className="nav-item" onClick={() => setShowSchedule(true)}>Lịch học & Hạn nộp</button>
+        )}
         <button className="nav-item" onClick={() => setShowProfile(!showProfile)}
           aria-expanded={showProfile} aria-controls="account-profile">Thông tin tài khoản</button>
         <span className="nav-language">Tiếng Việt</span>
       </nav>
+
+      {showSchedule && (
+        <ScheduleModal onClose={() => setShowSchedule(false)} onSessionExpired={onLogout} />
+      )}
 
       {showProfile && <section id="account-profile" className="profile-panel" aria-label="Thông tin tài khoản">
         <div><strong>{user.fullName}</strong><p>{user.email}</p></div>
@@ -76,14 +101,38 @@ export default function Dashboard({ user, onLogout }: { user: User; onLogout: ()
 
       <main id="main-content" className="workspace-main" tabIndex={-1}>
         <nav className="breadcrumbs" aria-label="Đường dẫn">
-          <a href="#main-content">Trang chủ</a><span aria-hidden="true">›</span>
-          <span>Các trang của hệ thống</span><span aria-hidden="true">›</span>
-          <span aria-current="page">{pageTitle}</span>
+          <a href="#main-content" onClick={handleBackToCourseList}>Trang chủ</a>
+          <span aria-hidden="true">›</span>
+          {selectedCourse && !isAdmin ? (
+            <>
+              <button
+                type="button"
+                className="text-button"
+                style={{ padding: 0, font: "inherit", color: "inherit", textDecoration: "underline", cursor: "pointer" }}
+                onClick={handleBackToCourseList}
+              >
+                Các khóa học của tôi
+              </button>
+              <span aria-hidden="true">›</span>
+              <span aria-current="page">{selectedCourse.title}</span>
+            </>
+          ) : (
+            <>
+              <span>Các trang của hệ thống</span>
+              <span aria-hidden="true">›</span>
+              <span aria-current="page">{pageTitle}</span>
+            </>
+          )}
         </nav>
         {error && <p className="error" role="alert">{error}</p>}
         {isAdmin
           ? <UserManagement currentUser={user} onSessionExpired={onLogout} />
-          : <CourseWorkspace user={user} onSessionExpired={onLogout} />}
+          : <CourseWorkspace
+              user={user}
+              onSessionExpired={onLogout}
+              selectedCourseId={selectedCourse?.id ?? null}
+              onSelectCourse={handleSelectCourse}
+            />}
       </main>
       <footer className="portal-footer">
         <span>LMS · Hệ thống quản lý học tập</span>
