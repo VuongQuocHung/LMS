@@ -5,6 +5,10 @@ spring:
     import: "optional:file:./.env[.properties]"
   application:
     name: lms-backend
+  servlet:
+    multipart:
+      max-file-size: ${UPLOAD_MAX_BYTES:20971520}B
+      max-request-size: ${UPLOAD_MAX_REQUEST_SIZE:21MB}
   datasource:
     # Giá trị thật nằm trong backend/.env hoặc biến môi trường cùng tên.
     url: ${DB_URL}
@@ -30,6 +34,10 @@ server:
         secure: ${COOKIE_SECURE:false}
 
 app:
+  files:
+    directory: ${UPLOAD_DIR:./uploads}
+    max-bytes: ${UPLOAD_MAX_BYTES:20971520}
+    max-count: ${UPLOAD_MAX_COUNT:5}
   seed:
     # Không tự tạo tài khoản demo ngoài profile dev/test.
     enabled: false

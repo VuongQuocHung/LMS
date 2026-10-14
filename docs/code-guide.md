@@ -1,5 +1,20 @@
 # Hướng dẫn đọc và mở rộng base
 
+## Upload/download và bản nháp tự luận
+
+- `file/AttachmentController`: API multipart, tải xuống và bản nháp.
+- `file/AttachmentService`: phân quyền theo khóa/bài, giới hạn file, khóa hàng khóa học và giao dịch chốt bài.
+- `file/FileStorage` / `LocalFileStorage`: lưu byte với tên UUID, thư mục cấu hình `UPLOAD_DIR`. Có thể thay adapter khi chuyển sang object storage.
+- `file/FileValidation`: kiểm tra phần mở rộng, tên file và chữ ký/nội dung; chỉ đọc ZIP có giới hạn, không giải nén ra ổ đĩa. Không phải bộ quét virus.
+- `essay_drafts` tách khỏi `assignment_submissions`, nên các truy vấn sổ điểm/số bài nộp hiện tại không tính nháp.
+- `AttachmentPanel.tsx`: UI dùng chung cho tài liệu/đề bài/bài nháp/bài nộp; `api.ts` tự bỏ Content-Type JSON khi gửi FormData và giữ CSRF.
+- Upload rollback sẽ xóa byte đã ghi; xóa file trực tiếp chỉ xóa byte sau commit. Xóa đối tượng cha cascade metadata; tác vụ chạy mỗi giờ dọn file UUID không còn metadata và cũ hơn 24 giờ. Điều này cũng retry khi xóa byte thất bại hoặc tiến trình bị ngắt.
+- Sao lưu/khôi phục database và thư mục upload cùng nhau. Giữ nguyên `UPLOAD_DIR` qua các lần khởi động. Chỉ một deployment sở hữu thư mục này; không dùng chung thư mục cho các database độc lập.
+
+Kiểm thử file: `AttachmentIntegrationTest`. Mặc định H2 và thư mục tạm riêng. Để kiểm tra trên PostgreSQL local:
+`mvn "-Dtest=AttachmentIntegrationTest" "-Dlms.test.postgres=true" test` từ `backend`.
+Test đọc `backend/.env`, tạo schema `lms_files_test_<random>` riêng, tự dọn schema sau test; không dùng bảng trong schema ứng dụng.
+
 ## Một request đi qua những đâu?
 
 ```text

@@ -1,5 +1,15 @@
 # Trạng thái kiểm tra
 
+## Upload/download và bản nháp tự luận — 14/10/2026
+
+- Backend: 23 integration tests trên H2 đạt (15 cũ + 8 mới), 0 failure/error.
+- PostgreSQL 18.6 local: chạy riêng 8 test file trên schema tạm; Flyway V1–V3 và Hibernate validate đạt, 0 failure/error. Schema được dọn sau test. Flyway có cảnh báo phiên bản PostgreSQL mới hơn mức đã kiểm thử của thư viện nhưng migration chạy thành công.
+- Kiểm thử mới: phân quyền/CSRF, file giả định dạng/rỗng/quá lớn/tên vượt đường dẫn, nháp không vào sổ điểm, file-only submission, khóa file sau nộp, thời gian mở và nộp trễ, 6 upload đồng thời chỉ nhận 5, upload đua với nộp bài, rollback xóa byte, cascade metadata và dọn file mồ côi.
+- Frontend: typecheck, lint và production build đạt. Proxy cấu hình 21 MiB, timeout upload 120 giây.
+- Chrome headless qua Next.js proxy, backend H2 tách riêng: upload TXT 11 MiB, download và đối chiếu SHA-256 đạt; đính kèm đề bài; lưu nháp và reload; nộp bài chỉ có file; không còn nút sửa file sau nộp; giảng viên thấy link tải file tại trang chấm.
+- Mobile 390px: không tràn ngang trong trang bài nộp có file.
+- Chưa kiểm thử object storage, quét virus hoặc tải nhiều file thành ZIP; các phần này ngoài phạm vi phiên bản đầu.
+
 ## Lần kiểm tra đợt 4 (13/10/2026) — Redesign LMS Assignment UX & Trải nghiệm học tập độc lập
 
 Kiểm tra ngày 13/10/2026 trên Windows, Java 21.0.8, Node v24.13.0.  

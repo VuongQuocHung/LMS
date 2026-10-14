@@ -33,13 +33,13 @@ async function readResponse<T>(response: Response): Promise<T> {
 }
 
 /** Gửi request có timeout và không cache dữ liệu riêng của tài khoản. */
-async function send<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function send<T>(path: string, options: RequestInit = {}, timeout = REQUEST_TIMEOUT_MS): Promise<T> {
   try {
     const response = await fetch(API_PREFIX + path, {
       ...options,
       credentials: "same-origin",
       cache: "no-store",
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeout),
     });
     return await readResponse<T>(response);
   } catch (error) {
@@ -58,12 +58,12 @@ async function csrfHeaders(): Promise<Record<string, string>> {
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
   const method = (options.method ?? "GET").toUpperCase();
   const headers = new Headers(options.headers);
-  if (options.body) headers.set("Content-Type", "application/json");
+  if (options.body && !(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
   if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
     const tokenHeaders = await csrfHeaders();
     Object.entries(tokenHeaders).forEach(([name, value]) => headers.set(name, value));
   }
-  return send<T>(path, { ...options, method, headers });
+  return send<T>(path, { ...options, method, headers }, options.body instanceof FormData ? 120_000 : REQUEST_TIMEOUT_MS);
 }
 
 /** Spring formLogin nhận form-urlencoded; các API nghiệp vụ khác nhận JSON. */

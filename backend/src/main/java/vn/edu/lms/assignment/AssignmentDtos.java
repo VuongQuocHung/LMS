@@ -139,7 +139,6 @@ public final class AssignmentDtos {
     ) {}
 
     public record SubmitEssayRequest(
-            @NotBlank(message = "Nội dung bài làm không được để trống.")
             String content
     ) {}
 

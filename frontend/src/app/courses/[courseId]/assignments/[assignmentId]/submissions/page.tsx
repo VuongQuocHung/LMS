@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { api, errorMessage, isSessionError } from "@/lib/api";
 import type { Assignment, CourseDetail, Submission, User } from "@/lib/types";
 import PortalShell from "@/components/PortalShell";
+import AttachmentPanel from "@/components/AttachmentPanel";
 
 type SubmissionFilter = "ALL" | "PENDING" | "GRADED";
 
@@ -333,6 +334,7 @@ function GradingWorkbench({
                     <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "4px", border: "1px solid #e2e8f0", whiteSpace: "pre-wrap", lineHeight: 1.75, fontSize: "14px", color: "#1e293b" }}>
                       {currentSub.content || "Sinh viên không để lại nội dung."}
                     </div>
+                    <AttachmentPanel key={currentSub.id} kind="submissions" targetId={currentSub.id} title="File bài làm của sinh viên" />
                   </div>
                 )}
 

@@ -1,7 +1,40 @@
-# Kiến trúc cơ sở dữ liệu LMS (Flyway V1 & V2)
+# Kiến trúc cơ sở dữ liệu LMS (Flyway V1–V3)
+
+V3 bổ sung `essay_drafts` (bản nháp tự luận riêng, unique assignment_id + student_id)
+và `file_attachments` (metadata file). Tất cả khóa chính tiếp tục dùng BIGINT IDENTITY.
+Nội dung file nằm trên ổ đĩa, không phải BLOB trong PostgreSQL.
+`file_attachments` có bốn FK nullable: lesson_id, assignment_id, draft_id, submission_id;
+CHECK bắt buộc đúng một FK có giá trị. Các FK này ON DELETE CASCADE.
+Khi nộp bài, draft_id chuyển thành submission_id rồi bản nháp được xóa trong cùng giao dịch.
 
 ```mermaid
 erDiagram
+    ASSIGNMENTS ||--o{ ESSAY_DRAFTS : "bản nháp"
+    USERS ||--o{ ESSAY_DRAFTS : "soạn bài"
+    USERS ||--o{ FILE_ATTACHMENTS : "upload"
+    LESSONS |o--o{ FILE_ATTACHMENTS : "tài liệu"
+    ASSIGNMENTS |o--o{ FILE_ATTACHMENTS : "đề bài"
+    ESSAY_DRAFTS |o--o{ FILE_ATTACHMENTS : "file nháp"
+    ASSIGNMENT_SUBMISSIONS |o--o{ FILE_ATTACHMENTS : "file đã chốt"
+    ESSAY_DRAFTS {
+        bigint id PK
+        bigint assignment_id FK
+        bigint student_id FK
+        text content
+    }
+    FILE_ATTACHMENTS {
+        bigint id PK
+        varchar original_name
+        varchar storage_key UK
+        varchar content_type
+        bigint size_bytes
+        bigint uploaded_by FK
+        timestamp created_at
+        bigint lesson_id FK
+        bigint assignment_id FK
+        bigint draft_id FK
+        bigint submission_id FK
+    }
     USERS ||--o{ COURSES : "giảng dạy"
     USERS ||--o{ ENROLLMENTS : "ghi danh"
     COURSES ||--o{ ENROLLMENTS : "chứa"

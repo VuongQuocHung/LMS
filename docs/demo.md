@@ -1,5 +1,18 @@
 # Kịch bản Demo LMS
 
+## Upload tài liệu và nộp bài bằng file (V3)
+
+1. Khởi động lại backend để Flyway áp dụng V3; khởi động lại frontend để nhận giới hạn proxy mới.
+2. Đăng nhập `teacher@lms.local` / `Demo@12345`. Mở một bài học, dùng mục **Tài liệu bài học** để thêm PDF/TXT/slide.
+3. Tạo bài tự luận, lưu nháp nếu cần. Tại trang chi tiết bài tập, thêm file ở **Đề bài và tài liệu đính kèm**, rồi công bố bài khi đã sẵn sàng.
+4. Đăng nhập sinh viên đã ghi danh. Tải file từ bài học và đề bài; kiểm tra sinh viên ngoài lớp không truy cập được file.
+5. Trong bài tự luận, nhập nội dung và bấm **Lưu bản nháp**; thêm file ở **File bài làm (bản nháp)**. Tải lại trang để thấy nội dung/file được giữ.
+6. Có thể xóa/thay file nháp. Bấm **Xác nhận nộp bài tự luận** để chốt. Có thể chỉ nộp file mà không nhập văn bản. File đã nộp không còn nút xóa/upload.
+7. Giảng viên mở trang chấm bài: tải file ở **File bài làm của sinh viên**, nhập điểm và nhận xét như trước.
+
+Mặc định tối đa 5 file/mục, 20 MiB/file. File upload được lưu ngay; nội dung văn bản chỉ lưu khi bấm lưu nháp hoặc nộp bài.
+Với bài học/bài tập mới, lưu đối tượng trước rồi mở trang chi tiết để thêm file.
+
 ## Kịch bản 1: Luồng Cơ bản (5 phút)
 
 1. Chạy PostgreSQL (hoặc Docker Compose), backend profile `dev`, frontend theo `README.md`.

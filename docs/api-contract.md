@@ -2,6 +2,35 @@
 
 Prefix `/api/v1`. Dữ liệu tài khoản không cache; tất cả API ngoài `/health`, `/auth/csrf` và `/auth/login` yêu cầu session xác thực.
 
+## File đính kèm và bài tự luận nháp (V3)
+
+Mọi mutation cần CSRF; upload dùng `multipart/form-data` với một trường `file` mỗi request.
+
+| Method | URL | Kết quả / Quyền |
+| --- | --- | --- |
+| GET | `/files/limits` | `{maxBytes,maxCount}`; đã đăng nhập |
+| GET/POST | `/lessons/{id}/files` | Danh sách/upload tài liệu; chỉ chủ khóa được upload |
+| GET/POST | `/assignments/{id}/files` | Danh sách/upload đề bài; chỉ chủ khóa được upload |
+| GET/POST | `/drafts/{assignmentId}/files` | File bản nháp của sinh viên đang đăng nhập; không nhận studentId từ client |
+| GET | `/submissions/{id}/files` | File bài đã nộp; chủ bài hoặc giảng viên sở hữu khóa |
+| GET | `/files/{id}/download` | Dữ liệu file, Content-Disposition attachment, private/no-store |
+| DELETE | `/files/{id}` | 204; chủ khóa xóa tài liệu/đề bài, sinh viên xóa file nháp của mình |
+| GET | `/assignments/{id}/draft` | `{content,files}`; trả bản nháp rỗng nếu chưa có |
+| PUT | `/assignments/{id}/draft` | Body `{content}`; lưu bản nháp, chưa tính là nộp bài |
+| POST | `/assignments/{id}/submit-essay` | Chốt bài cùng file; body `{content}` hoặc `{}` để dùng nội dung đã lưu |
+
+File DTO: `{id,originalName,contentType,sizeBytes,createdAt}`. Upload thành công trả 201.
+ID là BIGINT tự tăng; storage_key không được trả qua API.
+
+- Mặc định 5 file/mục, 20 MiB/file; PDF, DOCX, PPTX, XLSX, TXT UTF-8, ZIP. Kiểm tra tên và nội dung, không tin MIME client gửi.
+- Sinh viên phải được ghi danh, khóa và bài học/bài tập phải được công bố. Admin không có quyền đọc file mặc định.
+- Bài nháp tự luận không vào số bài đã nộp, lịch trạng thái nộp hay sổ điểm. Giảng viên không đọc được file nháp.
+- Chặn sửa/upload/nộp trước `openAt`; cho nộp sau `dueAt` với trạng thái `LATE`, theo nghiệp vụ hiện tại.
+- Bài tự luận cần nội dung không rỗng hoặc ít nhất một file. Chốt thành công chuyển file từ nháp sang bài nộp trong cùng giao dịch; không cho sửa/xóa file đã nộp.
+- Khóa hàng khóa học để tuần tự hóa upload/xóa/chốt, chặn vượt số file và thay file đồng thời với nộp bài.
+- Lỗi: 400 `INVALID_FILE`/`FILE_SIZE`/`EMPTY_SUBMISSION`, 413 khi vượt multipart limit; 403 sai quyền/chưa mở; 404 không tồn tại; 409 `FILE_LIMIT`/`ALREADY_SUBMITTED`.
+- File chỉ tải qua endpoint có xác thực; không được phục vụ từ thư mục static/public.
+
 ## Danh mục Endpoint
 
 ### 1. Xác thực & Quản lý phiên (Authentication)

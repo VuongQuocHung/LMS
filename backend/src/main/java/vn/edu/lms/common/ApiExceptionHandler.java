@@ -16,6 +16,16 @@ public class ApiExceptionHandler {
     // Stack trace chỉ nằm trong log backend, không được gửi về trình duyệt.
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleUploadLimit(Exception exception) {
+        return ResponseEntity.status(413).body(ApiError.of("FILE_SIZE", "File vượt giới hạn dung lượng upload."));
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MultipartException.class)
+    public ResponseEntity<ApiError> handleMultipart(Exception exception) {
+        return ResponseEntity.badRequest().body(ApiError.of("INVALID_UPLOAD", "Dữ liệu upload không hợp lệ."));
+    }
+
     /** Chuyển lỗi nghiệp vụ sang JSON và HTTP status tương ứng. */
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiError> handleBusiness(ApiException exception) {

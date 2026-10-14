@@ -3,7 +3,8 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api, errorMessage, isSessionError } from "@/lib/api";
+import { api, ApiError, errorMessage, isSessionError } from "@/lib/api";
+import AttachmentPanel from "@/components/AttachmentPanel";
 import type {
   Assignment,
   CourseDetail,
@@ -54,6 +55,7 @@ function AssignmentContent({
 
   // Student essay answering state
   const [essayContent, setEssayContent] = useState("");
+  const [filesBusy, setFilesBusy] = useState(false);
 
   // Teacher question adding state
   const [showAddQModal, setShowAddQModal] = useState(false);
@@ -85,7 +87,12 @@ function AssignmentContent({
           try {
             const sub = await api<Submission>(`/assignments/${assignmentId}/my-submission`);
             if (active) setSubmission(sub);
-          } catch {
+          } catch (err) {
+            if (!(err instanceof ApiError) || err.status !== 404) throw err;
+            if (assignData.type === "ESSAY") {
+              const draft = await api<{ content: string }>(`/assignments/${assignmentId}/draft`);
+              if (active) setEssayContent(draft.content);
+            }
             // Chưa nộp bài -> tải câu hỏi nếu là trắc nghiệm
             if (assignData.type === "QUIZ") {
               const qList = await api<QuizQuestion[]>(`/assignments/${assignmentId}/questions`);
@@ -154,10 +161,7 @@ function AssignmentContent({
   // Sinh viên nộp bài tự luận
   async function handleSubmitEssay(e: React.FormEvent) {
     e.preventDefault();
-    if (!essayContent.trim()) {
-      alert("Vui lòng nhập nội dung bài làm của bạn.");
-      return;
-    }
+    if (filesBusy || submitting) return;
     if (!window.confirm("Xác nhận nộp bài tự luận? Giảng viên sẽ đọc và chấm điểm bài nộp của bạn.")) {
       return;
     }
@@ -182,6 +186,16 @@ function AssignmentContent({
   }
 
   // Giảng viên thêm câu hỏi trắc nghiệm
+  async function saveDraft() {
+    if (filesBusy || submitting) return;
+    setSubmitting(true); setError(""); setSuccess("");
+    try {
+      await api(`/assignments/${assignmentId}/draft`, { method: "PUT", body: JSON.stringify({ content: essayContent }) });
+      setSuccess("Đã lưu bản nháp. Bài chưa được nộp cho giảng viên.");
+    } catch (err) { setError(errorMessage(err)); }
+    finally { setSubmitting(false); }
+  }
+
   async function handleAddQuestion(e: React.FormEvent) {
     e.preventDefault();
     const validationError = validateQuizQuestion(qText, qPoints, qOptions);
@@ -297,6 +311,9 @@ function AssignmentContent({
             </div>
           </div>
 
+          <AttachmentPanel key={`assignment-${assignmentId}`} kind="assignments" targetId={assignmentId}
+            editable={user.role === "TEACHER"} title="Đề bài và tài liệu đính kèm" />
+
           {/* ==================== KHU VỰC SINH VIÊN ==================== */}
           {user.role === "STUDENT" && (
             <div>
@@ -373,6 +390,8 @@ function AssignmentContent({
                   )}
 
                   {/* Nếu là bài viết: Xem lại nội dung bài đã nộp */}
+                  {assignment.type === "ESSAY" && <AttachmentPanel key={`submitted-${submission.id}`}
+                    kind="submissions" targetId={submission.id} title="File bài làm đã nộp" />}
                   {submission.content && (
                     <div className="panel" style={{ background: "white", marginTop: "14px" }}>
                       <h4 style={{ margin: "0 0 10px" }}>Nội dung bài viết bạn đã nộp:</h4>
@@ -457,10 +476,11 @@ function AssignmentContent({
                     /* BÀI VIẾT TỰ LUẬN */
                     <form className="panel" onSubmit={handleSubmitEssay}>
                       <h2 style={{ fontSize: "18px", margin: "0 0 14px" }}>Khu vực soạn và nộp bài làm</h2>
-                      <label htmlFor="essay-submission-text">Nội dung bài viết của bạn *</label>
+                      <p className="muted">Bản nháp · Nhập nội dung hoặc đính kèm file, sau đó bấm nộp bài để chốt.</p>
+                      <label htmlFor="essay-submission-text">Nội dung bài viết của bạn</label>
                       <textarea
                         id="essay-submission-text"
-                        required
+                        disabled={submitting}
                         rows={10}
                         placeholder="Soạn nội dung bài viết, phân tích, trả lời yêu cầu tại đây…"
                         value={essayContent}
@@ -472,11 +492,14 @@ function AssignmentContent({
                         {isLate && <span style={{ color: "#b91c1c", fontWeight: "bold" }}>Lưu ý: Hạn nộp đã qua. Bài nộp sẽ được tính là Nộp trễ.</span>}
                       </div>
 
-                      <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end" }}>
+                      <AttachmentPanel key={`draft-${assignmentId}`} kind="drafts" targetId={assignmentId}
+                        editable disabled={submitting} onBusyChange={setFilesBusy} title="File bài làm (bản nháp)" />
+                      <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+                        <button type="button" className="secondary" disabled={submitting || filesBusy} onClick={saveDraft}>Lưu bản nháp</button>
                         <button
                           type="submit"
                           className="primary"
-                          disabled={submitting}
+                          disabled={submitting || filesBusy}
                           style={{ padding: "10px 24px", fontSize: "14px", fontWeight: "bold" }}
                         >
                           {submitting ? "Đang gửi bài…" : "Xác nhận nộp bài tự luận"}

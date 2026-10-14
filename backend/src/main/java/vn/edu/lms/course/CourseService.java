@@ -12,6 +12,8 @@ import vn.edu.lms.user.*;
 @Service
 @Transactional(readOnly = true)
 public class CourseService {
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager em;
     private final CourseRepository courses;
     private final LessonRepository lessons;
     private final EnrollmentRepository enrollments;
@@ -85,6 +87,20 @@ public class CourseService {
     public void delete(Long id, UserAccount teacher) {
         Course course = getCourseOrThrow(id);
         requireCourseOwner(course, teacher);
+        em.lock(course, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        // Xóa từ con tới cha; file/draft được FK cascade xóa, bộ dọn xử lý file trên ổ đĩa.
+        String[] cleanup = {
+            "DELETE FROM quiz_answers WHERE submission_id IN (SELECT s.id FROM assignment_submissions s JOIN assignments a ON a.id=s.assignment_id WHERE a.course_id=:id)",
+            "DELETE FROM assignment_submissions WHERE assignment_id IN (SELECT id FROM assignments WHERE course_id=:id)",
+            "DELETE FROM quiz_options WHERE question_id IN (SELECT q.id FROM quiz_questions q JOIN assignments a ON a.id=q.assignment_id WHERE a.course_id=:id)",
+            "DELETE FROM quiz_questions WHERE assignment_id IN (SELECT id FROM assignments WHERE course_id=:id)",
+            "DELETE FROM assignments WHERE course_id=:id",
+            "DELETE FROM lesson_progress WHERE lesson_id IN (SELECT id FROM lessons WHERE course_id=:id)",
+            "DELETE FROM discussion_posts WHERE topic_id IN (SELECT id FROM discussion_topics WHERE course_id=:id)",
+            "DELETE FROM discussion_topics WHERE course_id=:id",
+            "DELETE FROM course_announcements WHERE course_id=:id"
+        };
+        for (String sql : cleanup) em.createNativeQuery(sql).setParameter("id", id).executeUpdate();
         lessons.deleteByCourseId(id);
         enrollments.deleteByCourseId(id);
         courses.delete(course);
@@ -143,8 +159,10 @@ public class CourseService {
     public void deleteLesson(Long courseId, Long lessonId, UserAccount teacher) {
         Course course = getCourseOrThrow(courseId);
         requireCourseOwner(course, teacher);
+        em.lock(course, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         Lesson lesson = lessons.findByIdAndCourseId(lessonId, courseId).orElseThrow(() ->
                 new ApiException(HttpStatus.NOT_FOUND, "LESSON_NOT_FOUND", "Không tìm thấy bài học trong khóa này."));
+        em.createNativeQuery("DELETE FROM lesson_progress WHERE lesson_id=:id").setParameter("id", lessonId).executeUpdate();
         lessons.delete(lesson);
     }
 

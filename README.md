@@ -1,5 +1,16 @@
 # FIT LMS — Hệ thống Quản lý Học tập Trực tuyến
 
+## File đính kèm (V3)
+
+Đã có upload/download tài liệu bài học, đề bài và bài nộp tự luận; bản nháp tự luận được lưu riêng và chốt file khi nộp.
+Sau khi cập nhật code, khởi động lại backend (Flyway tự thêm hai bảng V3) và frontend.
+Xem kịch bản sử dụng tại `docs/demo.md`.
+
+Backend lưu file ở `backend/uploads` khi chạy từ thư mục `backend`; có thể đổi `UPLOAD_DIR` trong `backend/.env`.
+Mặc định 5 file/mục, 20 MiB/file. Các biến cấu hình được liệt kê trong `backend/.env.example`.
+Nếu tăng dung lượng, tăng cả multipart request limit và `proxyClientMaxBodySize` trong `frontend/next.config.ts`.
+Không commit thư mục upload; sao lưu thư mục này cùng database.
+
 Hệ thống Learning Management System (LMS) hoàn chỉnh được phát triển dựa trên phong cách giao diện và trải nghiệm người dùng của cổng học tập FIT LMS (https://lms.fit.hanu.vn/).
 
 Dự án ưu tiên mã nguồn dễ đọc, chú thích tiếng Việt, phân tách tầng rõ ràng, kiểm soát phân quyền chặt chẽ và lưu trữ toàn vẹn dữ liệu.

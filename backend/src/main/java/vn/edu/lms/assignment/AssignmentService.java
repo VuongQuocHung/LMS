@@ -19,6 +19,8 @@ import vn.edu.lms.user.UserRepository;
 @Service
 @Transactional(readOnly = true)
 public class AssignmentService {
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager em;
     private final AssignmentRepository assignments;
     private final QuizQuestionRepository questions;
     private final QuizOptionRepository options;
@@ -27,6 +29,7 @@ public class AssignmentService {
     private final CourseRepository courses;
     private final EnrollmentRepository enrollments;
     private final UserRepository users;
+    private final vn.edu.lms.file.AttachmentService attachments;
 
     public AssignmentService(
             AssignmentRepository assignments,
@@ -36,7 +39,8 @@ public class AssignmentService {
             QuizAnswerRepository answers,
             CourseRepository courses,
             EnrollmentRepository enrollments,
-            UserRepository users
+            UserRepository users,
+            vn.edu.lms.file.AttachmentService attachments
     ) {
         this.assignments = assignments;
         this.questions = questions;
@@ -46,6 +50,7 @@ public class AssignmentService {
         this.courses = courses;
         this.enrollments = enrollments;
         this.users = users;
+        this.attachments = attachments;
     }
 
     public List<AssignmentView> listAssignments(Long courseId, UserAccount user) {
@@ -159,6 +164,7 @@ public class AssignmentService {
         Assignment a = getAssignmentOrThrow(assignmentId);
         Course course = getCourseOrThrow(a.getCourseId());
         requireCourseOwner(course, teacher);
+        em.lock(course, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
 
         List<AssignmentSubmission> subs = submissions.findByAssignmentIdOrderBySubmittedAtDesc(assignmentId);
         for (AssignmentSubmission sub : subs) {
@@ -320,29 +326,8 @@ public class AssignmentService {
 
     @Transactional
     public SubmissionView submitEssay(Long assignmentId, SubmitEssayRequest request, UserAccount student) {
-        Assignment a = getAssignmentOrThrow(assignmentId);
-        Course course = getCourseOrThrow(a.getCourseId());
-
-        if (a.getType() != AssignmentType.ESSAY) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "WRONG_TYPE", "Bài tập này không phải là bài viết tự luận.");
-        }
-        if (a.getStatus() != AssignmentStatus.PUBLISHED) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "NOT_PUBLISHED", "Bài tập chưa được công bố.");
-        }
-        if (!isStudentEnrolled(a.getCourseId(), student)) {
-            throw forbidden();
-        }
-        if (submissions.existsByAssignmentIdAndStudentId(assignmentId, student.getId())) {
-            throw new ApiException(HttpStatus.CONFLICT, "ALREADY_SUBMITTED", "Bạn đã nộp bài viết này rồi.");
-        }
-
-        SubmissionStatus status = (a.getDueAt() != null && Instant.now().isAfter(a.getDueAt()))
-                ? SubmissionStatus.LATE
-                : SubmissionStatus.SUBMITTED;
-
-        AssignmentSubmission sub = new AssignmentSubmission(assignmentId, student.getId(), request.content().trim(), status);
-        AssignmentSubmission saved = submissions.save(sub);
-        return buildSubmissionView(saved, a, student);
+        AssignmentSubmission saved = attachments.submitEssay(assignmentId, request.content(), student);
+        return buildSubmissionView(saved, getAssignmentOrThrow(assignmentId), student);
     }
 
     @Transactional

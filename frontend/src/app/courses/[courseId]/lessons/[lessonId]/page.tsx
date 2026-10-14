@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
+import AttachmentPanel from "@/components/AttachmentPanel";
 import { useRouter } from "next/navigation";
 import { api, errorMessage, isSessionError } from "@/lib/api";
 import type { CourseDetail, CourseProgress, Lesson, User } from "@/lib/types";
@@ -176,6 +177,8 @@ function LessonContent({
           <div className="lesson-body">
             {currentLesson.content}
           </div>
+          <AttachmentPanel key={lessonId} kind="lessons" targetId={lessonId}
+            editable={user.role === "TEACHER"} title="Tài liệu bài học" />
 
           {/* Điều hướng chuyển bài học trước/sau */}
           <nav className="lesson-nav-bar" aria-label="Chuyển bài học">
